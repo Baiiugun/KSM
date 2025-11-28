@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语试卷失分分析表</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 850px; margin: 20px auto; padding: 20px; background-color: #f9f9f9; }
+        h2 { text-align: center; color: #333; }
+        
+        /* 顶部学生信息 */
+        .student-info { margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; gap: 15px; flex-wrap: wrap;}
+        .student-info input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 200px; }
+
+        /* 表格样式 */
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: middle; }
+        th { background-color: #f0f0f0; font-weight: bold; color: #555; }
+        
+        select, input[type="text"], input[type="number"] {
+            width: 90%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        }
+        
+        /* 统计条样式 */
+        .summary-box {
+            margin-top: 20px; padding: 15px; background: #eef2f5; border: 1px solid #d1d9e6; border-radius: 5px;
+            display: flex; justify-content: space-around; font-weight: bold; font-size: 1.1em;
+        }
+        .total-score { color: #d9534f; font-size: 1.2em; border-bottom: 2px solid #d9534f; }
+
+        /* 按钮区域 */
+        .action-bar { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
+        button {
+            padding: 12px 24px; margin: 0 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.2s;
+        }
+        .btn-add { background-color: #5bc0de; color: white; }
+        .btn-save-file { background-color: #f0ad4e; color: white; }
+        .btn-link { background-color: #5cb85c; color: white; }
+        
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .del-btn { background:#d9534f; color:white; padding:5px 10px; width:auto; font-size: 14px;}
+
+        /* 提示信息 */
+        #msg-box { text-align: center; margin-top: 10px; color: green; height: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>📝 英语试卷失分分析 (可保存版)</h2>
+
+    <div class="student-info">
+        <input type="text" id="studentName" placeholder="学生姓名" oninput="updateUrlState()">
+        <input type="text" id="examName" placeholder="试卷名称 (如: 期中考试)" oninput="updateUrlState()">
+    </div>
+
+    <table id="analysisTable">
+        <thead>
+            <tr>
+                <th style="width: 20%">失分类型</th>
+                <th style="width: 15%">题号</th>
+                <th style="width: 40%">错误原因</th>
+                <th style="width: 15%">失分</th>
+                <th style="width: 10%">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <div style="text-align: center; margin-bottom: 10px;">
+        <button type="button" class="btn-add" onclick="addRow()">+ 添加一行</button>
+    </div>
+
+    <div class="summary-box">
+        <span>K (知识): <span id="k-total">0</span></span>
+        <span>S (技巧): <span id="s-total">0</span></span>
+        <span>M (心态): <span id="m-total">0</span></span>
+        <span class="total-score">总扣分: <span id="grand-total">0</span></span>
+    </div>
+
+    <div class="action-bar">
+        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">填写完毕后，选择一种方式发给老师：</p>
+        
+        <button type="button" class="btn-link" onclick="generateLink()">🔗 复制分享链接</button>
+        <button type="button" class="btn-save-file" onclick="saveAsFile()">💾 保存为文件</button>
+        
+        <div id="msg-box"></div>
+    </div>
+
+    <script>
+        // 1. 初始化：检查链接里有没有数据，有的话就恢复
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataStr = urlParams.get('data');
+            
+            if (dataStr) {
+                try {
+                    // 解码数据
+                    const data = JSON.parse(decodeURIComponent(escape(atob(dataStr))));
+                    restoreData(data);
+                    document.getElementById('msg-box').innerText = "已加载之前的填写记录！";
+                } catch (e) {
+                    console.error("数据加载失败", e);
+                    addRow(); // 加载失败则添加空行
+                }
+            } else {
+                addRow(); // 默认添加一行
+            }
+        };
+
+        // 2. 添加新行
+        function addRow(type='', qNum='', reason='', score='') {
+            const tbody = document.getElementById("analysisTable").getElementsByTagName('tbody')[0];
+            const newRow = tbody.insertRow();
+            
+            newRow.innerHTML = `
+                <td>
+                    <select class="type-select" onchange="calculate()">
+                        <option value="">--选--</option>
+                        <option value="K" ${type==='K'?'selected':''}>K (知识)</option>
+                        <option value="S" ${type==='S'?'selected':''}>S (技巧)</option>
+                        <option value="M" ${type==='M'?'selected':''}>M (心态)</option>
+                    </select>
+                </td>
+                <td><input type="text" class="q-num" value="${qNum}" oninput="updateUrlState()"></td>
+                <td><input type="text" class="reason" value="${reason}" oninput="updateUrlState()"></td>
+                <td><input type="number" class="score" value="${score}" oninput="calculate()" min="0" step="0.5"></td>
+                <td><button type="button" class="del-btn" onclick="deleteRow(this)">×</button></td>
+            `;
+            calculate();
+        }
+
+        // 3. 删除行
+        function deleteRow(btn) {
+            const row = btn.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            calculate();
+        }
+
+        // 4. 计算逻辑
+        function calculate() {
+            let k = 0, s = 0, m = 0, total = 0;
+            const rows = document.querySelectorAll("#analysisTable tbody tr");
+
+            rows.forEach(row => {
+                const type = row.querySelector(".type-select").value;
+                const score = parseFloat(row.querySelector(".score").value) || 0;
+
+                if (type === "K") k += score;
+                if (type === "S") s += score;
+                if (type === "M") m += score;
+                total += score;
+            });
+
+            document.getElementById("k-total").innerText = k;
+            document.getElementById("s-total").innerText = s;
+            document.getElementById("m-total").innerText = m;
+            document.getElementById("grand-total").innerText = total;
+            
+            updateUrlState(); // 每次变动都尝试更新状态（但不刷新页面）
+        }
+
+        // --- 核心黑科技功能 ---
+
+        // 获取当前所有数据
+        function getDataObject() {
+            const rows = document.querySelectorAll("#analysisTable tbody tr");
+            const rowData = [];
+            rows.forEach(row => {
+                rowData.push({
+                    t: row.querySelector(".type-select").value,
+                    q: row.querySelector(".q-num").value,
+                    r: row.querySelector(".reason").value,
+                    s: row.querySelector(".score").value
+                });
+            });
+
+            return {
+                name: document.getElementById("studentName").value,
+                exam: document.getElementById("examName").value,
+                rows: rowData
+            };
+        }
+
+        // 恢复数据
+        function restoreData(data) {
+            document.getElementById("studentName").value = data.name || "";
+            document.getElementById("examName").value = data.exam || "";
+            
+            const tbody = document.getElementById("analysisTable").getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ""; // 清空现有
+
+            if (data.rows && data.rows.length > 0) {
+                data.rows.forEach(r => addRow(r.t, r.q, r.r, r.s));
+            } else {
+                addRow();
+            }
+            calculate();
+        }
+
+        // 功能 A: 生成长链接 (Magic Link)
+        function generateLink() {
+            const data = getDataObject();
+            // 编码：JSON -> String -> Base64 -> URL编码
+            const jsonStr = JSON.stringify(data);
+            const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+            
+            // 拼接当前网页地址 + 参数
+            const newUrl = window.location.origin + window.location.pathname + "?data=" + base64;
+            
+            // 复制到剪贴板
+            navigator.clipboard.writeText(newUrl).then(() => {
+                document.getElementById('msg-box').innerText = "✅ 链接已复制！直接发给老师即可。";
+                alert("链接已复制！\n\n请直接在微信粘贴发给老师，老师点开就能看到你填的内容。");
+            }).catch(err => {
+                prompt("复制失败，请手动复制以下链接：", newUrl);
+            });
+        }
+
+        // 功能 B: 保存为 HTML 文件 (Solidify State)
+        function saveAsFile() {
+            // 1. 把所有Input的当前值写入到HTML属性中 (固化DOM)
+            const inputs = document.querySelectorAll("input");
+            inputs.forEach(input => input.setAttribute("value", input.value));
+
+            const selects = document.querySelectorAll("select");
+            selects.forEach(select => {
+                const options = select.querySelectorAll("option");
+                options.forEach(opt => {
+                    if (opt.value === select.value) opt.setAttribute("selected", "selected");
+                    else opt.removeAttribute("selected");
+                });
+            });
+
+            // 2. 获取当前整个网页的HTML代码
+            let htmlContent = document.documentElement.outerHTML;
+
+            // 3. 创建下载链接
+            const studentName = document.getElementById("studentName").value || "学生";
+            const blob = new Blob([htmlContent], {type: "text/html"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${studentName}_试卷分析.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            document.getElementById('msg-box').innerText = "✅ 文件已下载！请将该文件发送给老师。";
+        }
+
+        // 辅助：静默更新URL（不刷新），方便意外关闭后恢复
+        function updateUrlState() {
+            // 这里的逻辑稍微复杂点就不默认开启，避免URL过长看着乱
+            // 如果你需要"刷新页面数据不丢失"的功能可以启用 History API
+        }
+
+    </script>
+</body>
+</html>
