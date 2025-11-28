@@ -3,149 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>英语试卷失分分析表</title>
+    <title>英语试卷失分分析系统</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 850px; margin: 20px auto; padding: 20px; background-color: #f9f9f9; }
-        h2 { text-align: center; color: #333; }
+        /* 样式保持简洁美观 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background-color: #f5f7fa; }
+        h2 { text-align: center; color: #2c3e50; }
         
-        /* 顶部学生信息 */
-        .student-info { margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; gap: 15px; flex-wrap: wrap;}
-        .student-info input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; flex: 1; min-width: 200px; }
+        /* 顶部控制区 */
+        .control-panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #5bc0de; }
+        .control-row { display: flex; gap: 15px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+        
+        select.main-select { padding: 10px; font-size: 16px; border: 2px solid #5bc0de; border-radius: 5px; font-weight: bold; color: #333; flex: 1; min-width: 200px; }
+        input.info-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; flex: 1; }
 
         /* 表格样式 */
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: middle; }
-        th { background-color: #f0f0f0; font-weight: bold; color: #555; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid #eee; padding: 12px 8px; text-align: center; vertical-align: middle; }
+        th { background-color: #f8f9fa; font-weight: bold; color: #555; }
         
-        select, input[type="text"], input[type="number"] {
-            width: 90%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
-        }
+        /* 输入框微调 */
+        select.type-select, input.table-input { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; text-align: center;}
         
-        /* 统计条样式 */
-        .summary-box {
-            margin-top: 20px; padding: 15px; background: #eef2f5; border: 1px solid #d1d9e6; border-radius: 5px;
-            display: flex; justify-content: space-around; font-weight: bold; font-size: 1.1em;
-        }
-        .total-score { color: #d9534f; font-size: 1.2em; border-bottom: 2px solid #d9534f; }
+        /* 统计条 */
+        .summary-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; display: flex; justify-content: space-around; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .total-score { color: #d9534f; font-size: 1.2em; }
 
-        /* 按钮区域 */
+        /* 按钮 */
         .action-bar { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
-        button {
-            padding: 12px 24px; margin: 0 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.2s;
-        }
-        .btn-add { background-color: #5bc0de; color: white; }
-        .btn-save-file { background-color: #f0ad4e; color: white; }
-        .btn-link { background-color: #5cb85c; color: white; }
+        button { padding: 10px 20px; margin: 0 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .btn-add { background-color: #17a2b8; color: white; }
+        .btn-link { background-color: #28a745; color: white; font-weight: bold; padding: 12px 25px; box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2); }
+        .btn-del { background:#dc3545; color:white; padding:5px 10px; font-size: 12px; }
         
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        .del-btn { background:#d9534f; color:white; padding:5px 10px; width:auto; font-size: 14px;}
+        button:hover { transform: translateY(-2px); opacity: 0.9; }
 
-        /* 提示信息 */
-        #msg-box { text-align: center; margin-top: 10px; color: green; height: 20px; font-weight: bold; }
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .control-row { flex-direction: column; align-items: stretch; }
+        }
     </style>
 </head>
 <body>
 
-    <h2>📝 英语试卷失分分析 (可保存版)</h2>
+    <h2>📝 英语试卷失分智能分析</h2>
 
-    <div class="student-info">
-        <input type="text" id="studentName" placeholder="学生姓名" oninput="updateUrlState()">
-        <input type="text" id="examName" placeholder="试卷名称 (如: 期中考试)" oninput="updateUrlState()">
+    <div class="control-panel">
+        <div class="control-row">
+            <label style="font-weight:bold;">1. 选择考试类型：</label>
+            <select id="examTemplate" class="main-select" onchange="loadTemplate()">
+                <option value="default">-- 通用空白模版 --</option>
+                <option value="gaokao">高考英语 (CN)</option>
+                <option value="toefl">托福 (TOEFL)</option>
+                </select>
+        </div>
+        <div class="control-row">
+            <input type="text" id="studentName" class="info-input" placeholder="学生姓名" oninput="updateState()">
+            <input type="text" id="examName" class="info-input" placeholder="试卷名称 (自动填充)" oninput="updateState()">
+        </div>
     </div>
 
     <table id="analysisTable">
         <thead>
             <tr>
-                <th style="width: 20%">失分类型</th>
+                <th style="width: 15%">类型 (K/S/M)</th>
                 <th style="width: 15%">题号</th>
-                <th style="width: 40%">错误原因</th>
-                <th style="width: 15%">失分</th>
-                <th style="width: 10%">操作</th>
+                <th style="width: 45%">错误原因/考点</th>
+                <th style="width: 15%">扣分</th>
+                <th style="width: 10%"></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="tableBody">
             </tbody>
     </table>
 
-    <div style="text-align: center; margin-bottom: 10px;">
+    <div style="text-align: center; margin-top: 10px;">
         <button type="button" class="btn-add" onclick="addRow()">+ 添加一行</button>
     </div>
 
     <div class="summary-box">
-        <span>K (知识): <span id="k-total">0</span></span>
-        <span>S (技巧): <span id="s-total">0</span></span>
-        <span>M (心态): <span id="m-total">0</span></span>
+        <span style="color:#007bff">K知识: <span id="k-total">0</span></span>
+        <span style="color:#fd7e14">S技巧: <span id="s-total">0</span></span>
+        <span style="color:#6f42c1">M心态: <span id="m-total">0</span></span>
         <span class="total-score">总扣分: <span id="grand-total">0</span></span>
     </div>
 
     <div class="action-bar">
-        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">填写完毕后，选择一种方式发给老师：</p>
-        
-        <button type="button" class="btn-link" onclick="generateLink()">🔗 复制分享链接</button>
-        <button type="button" class="btn-save-file" onclick="saveAsFile()">💾 保存为文件</button>
-        
-        <div id="msg-box"></div>
+        <p style="color: #666; font-size: 0.9em;">完成后点击下方按钮生成链接发给老师：</p>
+        <button type="button" class="btn-link" onclick="generateLink()">🔗 生成提交链接</button>
+        <div id="msg-box" style="margin-top:10px; color:green; font-weight:bold; height:20px;"></div>
     </div>
 
     <script>
-        // 1. 初始化：检查链接里有没有数据，有的话就恢复
+        // ==========================================
+        // 🔧 【自定义配置区】 老师请在这里修改/添加模版
+        // ==========================================
+        
+        const EXAM_TEMPLATES = {
+            // 1. 通用模版（只给一行空的）
+            "default": [
+                { q: "", r: "" } 
+            ],
+
+            // 2. 高考模版示例 (你可以修改里面的文字)
+            "gaokao": [
+                { q: "1-20", r: "听力理解" },
+                { q: "21-40", r: "阅读理解" },
+                { q: "41-55", r: "完形填空" },
+                { q: "56-65", r: "语法填空" },
+                { q: "作文", r: "书面表达" }
+            ],
+
+            // 3. 托福模版示例
+            "toefl": [
+                { q: "Reading", r: "词汇题/细节题" },
+                { q: "Listening", r: "对话/讲座" },
+                { q: "Speaking", r: "独立口语" },
+                { q: "Writing", r: "综合写作" }
+            ]
+            
+            // 💡 想加新考试？复制上面的格式，粘贴在下面即可
+            // 例如： "ielts": [ {q: "...", r: "..."} ]
+        };
+
+        // ==========================================
+        // 下面的代码通常不需要改动
+        // ==========================================
+
         window.onload = function() {
+            // 检查是否有分享链接带来的数据
             const urlParams = new URLSearchParams(window.location.search);
             const dataStr = urlParams.get('data');
             
             if (dataStr) {
-                try {
-                    // 解码数据
-                    const data = JSON.parse(decodeURIComponent(escape(atob(dataStr))));
-                    restoreData(data);
-                    document.getElementById('msg-box').innerText = "已加载之前的填写记录！";
-                } catch (e) {
-                    console.error("数据加载失败", e);
-                    addRow(); // 加载失败则添加空行
-                }
+                restoreData(dataStr);
             } else {
-                addRow(); // 默认添加一行
+                loadTemplate(); // 默认加载通用模版
             }
         };
 
-        // 2. 添加新行
+        // 切换模版
+        function loadTemplate() {
+            const type = document.getElementById("examTemplate").value;
+            const tpl = EXAM_TEMPLATES[type] || EXAM_TEMPLATES["default"];
+            
+            // 自动更新试卷名称
+            const selectText = document.getElementById("examTemplate").options[document.getElementById("examTemplate").selectedIndex].text;
+            if(type !== 'default') {
+                document.getElementById("examName").value = selectText;
+            }
+
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = ""; // 清空
+
+            // 循环生成行
+            tpl.forEach(item => {
+                addRow('', item.q, item.r, '');
+            });
+            calculate();
+        }
+
+        // 添加一行
         function addRow(type='', qNum='', reason='', score='') {
-            const tbody = document.getElementById("analysisTable").getElementsByTagName('tbody')[0];
+            const tbody = document.getElementById("tableBody");
             const newRow = tbody.insertRow();
             
             newRow.innerHTML = `
                 <td>
                     <select class="type-select" onchange="calculate()">
-                        <option value="">--选--</option>
-                        <option value="K" ${type==='K'?'selected':''}>K (知识)</option>
-                        <option value="S" ${type==='S'?'selected':''}>S (技巧)</option>
-                        <option value="M" ${type==='M'?'selected':''}>M (心态)</option>
+                        <option value="">-</option>
+                        <option value="K" ${type==='K'?'selected':''}>K知识</option>
+                        <option value="S" ${type==='S'?'selected':''}>S技巧</option>
+                        <option value="M" ${type==='M'?'selected':''}>M心态</option>
                     </select>
                 </td>
-                <td><input type="text" class="q-num" value="${qNum}" oninput="updateUrlState()"></td>
-                <td><input type="text" class="reason" value="${reason}" oninput="updateUrlState()"></td>
-                <td><input type="number" class="score" value="${score}" oninput="calculate()" min="0" step="0.5"></td>
-                <td><button type="button" class="del-btn" onclick="deleteRow(this)">×</button></td>
+                <td><input type="text" class="table-input q-num" value="${qNum}" oninput="updateState()"></td>
+                <td><input type="text" class="table-input reason" value="${reason}" oninput="updateState()"></td>
+                <td><input type="number" class="table-input score" value="${score}" oninput="calculate()" min="0" step="0.5" placeholder="0"></td>
+                <td><button type="button" class="btn-del" onclick="deleteRow(this)">×</button></td>
             `;
-            calculate();
         }
 
-        // 3. 删除行
         function deleteRow(btn) {
-            const row = btn.parentNode.parentNode;
-            row.parentNode.removeChild(row);
+            btn.closest('tr').remove();
             calculate();
         }
 
-        // 4. 计算逻辑
         function calculate() {
             let k = 0, s = 0, m = 0, total = 0;
-            const rows = document.querySelectorAll("#analysisTable tbody tr");
-
-            rows.forEach(row => {
+            document.querySelectorAll("#tableBody tr").forEach(row => {
                 const type = row.querySelector(".type-select").value;
                 const score = parseFloat(row.querySelector(".score").value) || 0;
-
+                
                 if (type === "K") k += score;
                 if (type === "S") s += score;
                 if (type === "M") m += score;
@@ -157,104 +205,59 @@
             document.getElementById("m-total").innerText = m;
             document.getElementById("grand-total").innerText = total;
             
-            updateUrlState(); // 每次变动都尝试更新状态（但不刷新页面）
+            updateState();
         }
 
-        // --- 核心黑科技功能 ---
+        // 生成分享链接
+        function generateLink() {
+            const data = {
+                n: document.getElementById("studentName").value,
+                e: document.getElementById("examName").value,
+                t: document.getElementById("examTemplate").value,
+                r: []
+            };
 
-        // 获取当前所有数据
-        function getDataObject() {
-            const rows = document.querySelectorAll("#analysisTable tbody tr");
-            const rowData = [];
-            rows.forEach(row => {
-                rowData.push({
+            document.querySelectorAll("#tableBody tr").forEach(row => {
+                data.r.push({
                     t: row.querySelector(".type-select").value,
                     q: row.querySelector(".q-num").value,
-                    r: row.querySelector(".reason").value,
-                    s: row.querySelector(".score").value
+                    rs: row.querySelector(".reason").value,
+                    sc: row.querySelector(".score").value
                 });
             });
 
-            return {
-                name: document.getElementById("studentName").value,
-                exam: document.getElementById("examName").value,
-                rows: rowData
-            };
+            const jsonStr = JSON.stringify(data);
+            const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+            const newUrl = window.location.origin + window.location.pathname + "?data=" + base64;
+            
+            navigator.clipboard.writeText(newUrl).then(() => {
+                document.getElementById('msg-box').innerText = "✅ 链接已复制！请粘贴发给老师。";
+                alert("链接已复制！\n\n直接在微信粘贴发给老师即可。");
+            }).catch(() => prompt("请手动复制：", newUrl));
         }
 
         // 恢复数据
-        function restoreData(data) {
-            document.getElementById("studentName").value = data.name || "";
-            document.getElementById("examName").value = data.exam || "";
-            
-            const tbody = document.getElementById("analysisTable").getElementsByTagName('tbody')[0];
-            tbody.innerHTML = ""; // 清空现有
+        function restoreData(dataStr) {
+            try {
+                const data = JSON.parse(decodeURIComponent(escape(atob(dataStr))));
+                document.getElementById("studentName").value = data.n || "";
+                document.getElementById("examName").value = data.e || "";
+                document.getElementById("examTemplate").value = data.t || "default";
 
-            if (data.rows && data.rows.length > 0) {
-                data.rows.forEach(r => addRow(r.t, r.q, r.r, r.s));
-            } else {
-                addRow();
+                const tbody = document.getElementById("tableBody");
+                tbody.innerHTML = "";
+                data.r.forEach(item => addRow(item.t, item.q, item.rs, item.sc));
+                calculate();
+                document.getElementById('msg-box').innerText = "📂 已加载学生提交的数据";
+            } catch (e) {
+                console.error(e);
+                loadTemplate();
             }
-            calculate();
         }
 
-        // 功能 A: 生成长链接 (Magic Link)
-        function generateLink() {
-            const data = getDataObject();
-            // 编码：JSON -> String -> Base64 -> URL编码
-            const jsonStr = JSON.stringify(data);
-            const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
-            
-            // 拼接当前网页地址 + 参数
-            const newUrl = window.location.origin + window.location.pathname + "?data=" + base64;
-            
-            // 复制到剪贴板
-            navigator.clipboard.writeText(newUrl).then(() => {
-                document.getElementById('msg-box').innerText = "✅ 链接已复制！直接发给老师即可。";
-                alert("链接已复制！\n\n请直接在微信粘贴发给老师，老师点开就能看到你填的内容。");
-            }).catch(err => {
-                prompt("复制失败，请手动复制以下链接：", newUrl);
-            });
+        function updateState() {
+            // 用于未来扩展实时保存功能
         }
-
-        // 功能 B: 保存为 HTML 文件 (Solidify State)
-        function saveAsFile() {
-            // 1. 把所有Input的当前值写入到HTML属性中 (固化DOM)
-            const inputs = document.querySelectorAll("input");
-            inputs.forEach(input => input.setAttribute("value", input.value));
-
-            const selects = document.querySelectorAll("select");
-            selects.forEach(select => {
-                const options = select.querySelectorAll("option");
-                options.forEach(opt => {
-                    if (opt.value === select.value) opt.setAttribute("selected", "selected");
-                    else opt.removeAttribute("selected");
-                });
-            });
-
-            // 2. 获取当前整个网页的HTML代码
-            let htmlContent = document.documentElement.outerHTML;
-
-            // 3. 创建下载链接
-            const studentName = document.getElementById("studentName").value || "学生";
-            const blob = new Blob([htmlContent], {type: "text/html"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${studentName}_试卷分析.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            document.getElementById('msg-box').innerText = "✅ 文件已下载！请将该文件发送给老师。";
-        }
-
-        // 辅助：静默更新URL（不刷新），方便意外关闭后恢复
-        function updateUrlState() {
-            // 这里的逻辑稍微复杂点就不默认开启，避免URL过长看着乱
-            // 如果你需要"刷新页面数据不丢失"的功能可以启用 History API
-        }
-
     </script>
 </body>
 </html>
